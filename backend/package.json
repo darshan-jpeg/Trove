@@ -1,0 +1,25 @@
+{
+  "name": "trove",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A modern communication-enhancement app that goes beyond “Word of the Day.” This app helps users upgrade their vocabulary, writing style, and real-world communication through daily words, idioms, smarter sentence suggestions, and practical language tools.",
+  "scripts": {
+    "start": "node api/generate.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/darshan-jpeg/Trove.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/darshan-jpeg/Trove/issues"
+  },
+  "homepage": "https://github.com/darshan-jpeg/Trove#readme",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@vercel/postgres": "^0.10.0",
+    "dotenv": "^17.2.3"
+  }
+}
