@@ -27,14 +27,30 @@ Pull environment variables.
 vercel env pull .env
 ```
 
+If running for the first time, create tables.
+
+```
+node init.js
+```
+
 Start development server.
 
 ```
 vercel dev
 ```
 
-Alternatively, push to production. API endpoint is https://trove-zeta.vercel.app/api/.
+Alternatively, push to production.
 
 ```
 vercel --prod
+```
+
+## Calling the API
+
+### Generate
+
+Generate a new word every 24 hours in the style `formal`, `casual`, or `rare`. For example, to generate a formal word,
+
+```
+curl https://trove-zeta.vercel.app/api/generate?style=formal
 ```
