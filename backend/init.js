@@ -1,5 +1,7 @@
-import { sql } from '@vercel/postgres';
-import dotenv from 'dotenv';
+// Create tables initially
+
+import { sql } from "@vercel/postgres";
+import dotenv from "dotenv";
 
 dotenv.config();
 

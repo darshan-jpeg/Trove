@@ -1,3 +1,5 @@
+// /api/generate endpoint
+
 import { sql } from "@vercel/postgres";
 import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -6,20 +8,22 @@ dotenv.config();
 
 async function handler(req, res) {
 	// Allow CORS for all origins
+	// Avoid issue when frontend and backend are on different domains
 	res.setHeader("Access-Control-Allow-Origin", "*");
 	res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
 
 	const style = req.query?.style;
+	// Check if one of the 3 possible styles
 	const validStyles = ["casual", "rare", "formal"];
 	if (!validStyles.includes(style)) {
 		res.status(400).json({
-			error: "Invalid or missing style parameter. Use 'casual', 'rare', or 'formal'.",
+			error: "Invalid or missing style parameter.",
 		});
 		return;
 	}
 	const tableName = style;
 
-	// 1. Get the last generated word from the correct table
+	// Get the last generated word from the corresponding table
 	let lastRows;
 	try {
 		lastRows = (
@@ -39,7 +43,7 @@ async function handler(req, res) {
 	}
 	const lastWord = lastRows[0];
 
-	// 2. Check if last word is less than 24 hours old
+	// Check if last word is less than 24 hours old
 	if (lastWord) {
 		const lastCreatedAt = new Date(lastWord.created_at);
 		const now = new Date();
@@ -57,7 +61,7 @@ async function handler(req, res) {
 		}
 	}
 
-	// 3. Get the list of last 50 words from the correct table
+	// Otherwise, get the list of last 50 words from the corresponding table
 	let wordRows;
 	try {
 		wordRows = (
@@ -77,33 +81,34 @@ async function handler(req, res) {
 	}
 	const words = wordRows.map((row) => row.word);
 
-	// 4. Prepare the prompt
+	// Gemini instructions
 	let styleInstruction = `\nMake sure the word, meaning, and example are in a ${style} style.
-        ENSURE THAT THEY ALWAYS MATCH THIS STYLE.
-        Formal words mean words used in professional environments like at work, during an interview, and so on.
-        Rare means obscure and uncommon words that people rarely use in their life, such as “defenestrate” or “petrichor”.
-        Casual means everyday words in normal conversations, the kind someone who is new to English would like to learn.
-        According to the style given and what you should give for each style, give me what I require.`;
+    ENSURE THAT THEY ALWAYS MATCH THIS STYLE.
+    Formal words mean words used in professional environments like at work, during an interview, and so on.
+    Rare means obscure and uncommon words that people rarely use in their life, such as “defenestrate” or “petrichor”.
+    Casual means everyday words in normal conversations, the kind someone who is new to English would like to learn.
+    According to the style given and what you should give for each style, give me what I require.`;
+
 	const prompt = `
-Here is a list of the last 50 words: ${words.join(", ")}
-Generate a "word of the day" that is not in the above list.
-The word should NEVER be in the above list of words.
-ALWAYS ENSURE THAT IT'S A NEW WORD.
+    Here is a list of the last 50 words: ${words.join(", ")}
+    Generate a "word of the day" that is not in the above list.
+    The word should NEVER be in the above list of words.
+    ALWAYS ENSURE THAT IT'S A NEW WORD.
+    Capitalize the first letter of the word. Use proper grammar and punctuation.
 
-Return ONLY valid JSON in this exact format:
-{
-    "word": "string",
-    "meaning": "string",
-    "example": "string"
-}
+    Return ONLY valid JSON in this exact format:
+    {
+        "word": "string",
+        "meaning": "string",
+        "example": "string"
+    }
 
-Do not include markdown, backticks, comments, labels, or any text outside the JSON.
-ONLY RETURN JSON IN THE ABOVE MENTIONED VALID FORMAT.
-EVERY TIME.
-REGARDLESS OF WHAT HAPPENS, ALWAYS RETURN IN THE ABOVE FORMAT!!!${styleInstruction}
-`;
+    Do not include markdown, backticks, comments, labels, or any text outside the JSON.
+    ONLY RETURN JSON IN THE ABOVE MENTIONED VALID FORMAT.
+    EVERY TIME.
+    REGARDLESS OF WHAT HAPPENS, ALWAYS RETURN IN THE ABOVE FORMAT!!!${styleInstruction}`;
 
-	// 5. Call Gemini
+	// Gemini API call
 	const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 	const model = genAI.getGenerativeModel({
 		model: "gemini-flash-lite-latest",
@@ -120,7 +125,7 @@ REGARDLESS OF WHAT HAPPENS, ALWAYS RETURN IN THE ABOVE FORMAT!!!${styleInstructi
 		return;
 	}
 
-	// 6. Insert the new word into the correct table
+	// Insert newly generated word into corresponding table
 	try {
 		await sql.query(
 			`INSERT INTO ${tableName} (word, meaning, example) VALUES ($1, $2, $3);`,
